@@ -1,12 +1,3 @@
-[package]
-name = "pace_app"
-version = "0.1.0"
-edition = "2021"
+[workspace]
 
-[dependencies]
-# iced = { version = "0.13", features = ["debug", "multi-window"] }
-
-[dependencies.iced]
-git = "https://github.com/iced-rs/iced.git"
-rev = "06ff17fcf87495663a295d1548df1c2ac03dafbd"
-features = ["debug", "lazy", "multi-window"]
+members = ["app", "desktop", "web"]
