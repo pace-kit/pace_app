@@ -1,22 +1,16 @@
 [package]
-name = "app"
+name = "web_resolver"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 
 base_resolver = { path = "../base_resolver" }
-web_resolver = { path = "../web_resolver" }
-desktop_resolver = { path = "../desktop_resolver" }
 
 serde = { version = "1.0.197", features = ["derive"] }
 
-dioxus = { version = "0.5", features = ["router"] }
+dioxus = { version = "0.5", features = ["fullstack", "router"] }
 
 # Debug
 tracing = "0.1.40"
 dioxus-logger = "0.5.0"
-
-[features]
-web = []
-desktop = []

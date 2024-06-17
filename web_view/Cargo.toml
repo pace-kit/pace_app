@@ -1,5 +1,5 @@
 [package]
-name = "web"
+name = "web_view"
 version = "0.1.0"
 authors = ["WilliamRagstad <william.ragstad@gmail.com>"]
 edition = "2021"
@@ -7,6 +7,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+
+app = { path = "../app", features = ["web"] }
+
 serde = { version = "1.0.197", features = ["derive"] }
 
 dioxus = { version = "0.5", features = ["fullstack", "router"] }
