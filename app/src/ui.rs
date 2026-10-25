@@ -21,6 +21,8 @@ pub fn App() -> Element {
     });
     use_effect(move || browser::set_dirty(editor.read().dirty));
     let issues = editor.read().project.validate();
+    let has_issues = !issues.is_empty();
+    let mut session = use_signal(|| None::<crate::rehearsal::Rehearsal>);
     rsx! {
         style { {include_str!("editor.css")} }
         div { class: "app",
@@ -47,7 +49,13 @@ pub fn App() -> Element {
                 }
                 button { class: "primary", onclick: move |_| {
                     let result = editor.read().project.to_json().and_then(|text| { browser::download(&text)?; Ok(text) });
-                    match result { Ok(text) => { editor.write().dirty = false; notice.set(match browser::recover(&text) { Ok(()) => "Project file downloaded and browser recovery saved.".into(), Err(e) => format!("Project file downloaded. {e}") }); }, Err(e) => notice.set(e) }
+                    match result {
+                        Ok(text) => match browser::recover(&text) {
+                            Ok(()) => { editor.write().dirty = false; notice.set("Project download requested and browser recovery saved.".into()); },
+                            Err(e) => notice.set(format!("Project download requested. {e}")),
+                        },
+                        Err(e) => notice.set(e),
+                    }
                 }, "Save project" }
             }
             div { class: "dependency-banner", "Draft format v1 · PACE core integration pending. Your project files include all imported images." }
@@ -60,6 +68,18 @@ pub fn App() -> Element {
                     for room in editor.read().project.rooms.clone() {
                         button { class: if editor.read().selected_room() == Some(room.id.as_str()) { "tree-row active" } else { "tree-row" }, onclick: move |_| editor.write().selection = Selection::Room(room.id.clone()), "{room.name}" }
                     }
+                    div { class: "section-heading", h2 { "INVENTORY" } button { "aria-label": "Add item", onclick: move |_| {
+                        let mut id = String::new(); editor.write().edit(|p| id = p.add_item()); editor.write().selection = Selection::Item(id);
+                    }, "+" } }
+                    for item in editor.read().project.items.clone() {
+                        button { class: if editor.read().selection == Selection::Item(item.id.clone()) { "tree-row active" } else { "tree-row" }, onclick: move |_| editor.write().selection = Selection::Item(item.id.clone()), "{item.name}" }
+                    }
+                    div { class: "section-heading", h2 { "DIALOGUE" } button { "aria-label": "Add dialogue", onclick: move |_| {
+                        let mut id = String::new(); editor.write().edit(|p| id = p.add_dialogue()); editor.write().selection = Selection::Dialogue(id);
+                    }, "+" } }
+                    for dialogue in editor.read().project.dialogues.clone() {
+                        button { class: if editor.read().selection == Selection::Dialogue(dialogue.id.clone()) { "tree-row active" } else { "tree-row" }, onclick: move |_| editor.write().selection = Selection::Dialogue(dialogue.id.clone()), "{dialogue.name}" }
+                    }
                     div { class: "sidebar-foot", "Build a world, one room at a time." }
                 }
                 main { class: "main-panel",
@@ -67,14 +87,21 @@ pub fn App() -> Element {
                         span { class: "eyebrow", "YOUR ADVENTURE" }
                         button { disabled: !editor.read().can_undo(), onclick: move |_| editor.write().undo(), "Undo" }
                         button { disabled: !editor.read().can_redo(), onclick: move |_| editor.write().redo(), "Redo" }
+                        button { disabled: has_issues, onclick: move |_| {
+                            match crate::rehearsal::Rehearsal::new(&editor.read().project) { Ok(state) => session.set(Some(state)), Err(e) => notice.set(e) }
+                        }, "Rehearse draft" }
+                        button { disabled: true, title: "No PACE core runtime is available at the inspected revision.", "Core preview" }
+                        button { disabled: true, title: "Game export requires a pinned PACE core runtime.", "Export game" }
                     }
+                    if matches!(editor.read().selection, Selection::Item(_) | Selection::Dialogue(_)) { crate::story::StoryWorkspace { editor } } else {
                     crate::rooms::RoomWorkspace { key: "{editor.read().selected_room().unwrap_or_default()}", editor, notice }
+                    }
                 }
                 aside { class: "inspector",
                     if editor.read().selected_room().is_some() { crate::rooms::RoomInspector { editor } } else {
                     h2 { "Project" }
                     label { "Project title" input { value: "{editor.read().project.title}", oninput: move |e| editor.write().edit(|p| p.title = e.value()) } }
-                    label { "Starting room" select { value: editor.read().project.start_room.clone().unwrap_or_default(), onchange: move |e| editor.write().edit(|p| p.start_room = if e.value().is_empty() { None } else { Some(e.value()) }), option { value: "", "Choose a room" } for room in editor.read().project.rooms.clone() { option { value: "{room.id}", "{room.name}" } } } }
+                    label { "Starting room" select { value: editor.read().project.start_room.clone().unwrap_or_default(), onchange: move |e| editor.write().edit(|p| p.start_room = if e.value().is_empty() { None } else { Some(e.value()) }), option { value: "", selected: editor.read().project.start_room.is_none(), "Choose a room" } for room in editor.read().project.rooms.clone() { option { value: "{room.id}", selected: editor.read().project.start_room.as_deref() == Some(room.id.as_str()), "{room.name}" } } } }
                     }
                     h3 { "Validation · {issues.len()}" }
                     if issues.is_empty() { p { class: "success", "Ready for draft authoring." } }
@@ -84,6 +111,7 @@ pub fn App() -> Element {
                 }
             }
             footer { role: "status", "{notice}" }
+            if session.read().is_some() { crate::preview::DraftPreview { session } }
         }
     }
 }

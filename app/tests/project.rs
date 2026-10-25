@@ -158,16 +158,13 @@ fn canvas_geometry_handles_reverse_drag_clamping_and_tiny_gestures() {
         }
     );
     assert!(Rect::from_drag((0.5, 0.5), (0.5, 0.6)).is_none());
-    assert!(
-        Rect {
-            x: f64::NAN,
-            y: 0.,
-            width: 0.1,
-            height: 0.1
-        }
-        .valid()
-            == false
-    );
+    assert!(!Rect {
+        x: f64::NAN,
+        y: 0.,
+        width: 0.1,
+        height: 0.1
+    }
+    .valid());
     let moved = Rect {
         x: 0.1,
         y: 0.2,
@@ -203,4 +200,18 @@ fn room_and_hotspot_operations_preserve_links_across_rename_and_report_deletion(
     );
     e.undo();
     assert_eq!(e.project, p);
+}
+#[test]
+fn non_finite_bounds_cannot_silently_serialize_as_null() {
+    let mut p = project();
+    p.rooms[0].hotspots[0].rect.x = f64::INFINITY;
+    assert!(p.to_json().unwrap_err().contains("non-finite"));
+}
+#[test]
+fn renderer_does_not_load_external_or_active_background_urls() {
+    let mut bg = background();
+    bg.data_url = "https://example.com/tracking.png".into();
+    assert_eq!(bg.display_url(), "");
+    bg.data_url = "data:image/svg+xml,<svg/>".into();
+    assert_eq!(bg.display_url(), "");
 }
