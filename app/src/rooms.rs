@@ -90,6 +90,7 @@ pub fn RoomWorkspace(mut editor: Signal<Editor>, mut notice: Signal<String>) -> 
         .map(|b| format!("{} × {}", b.width, b.height))
         .unwrap_or_default();
     rsx! {
+      div { class: "room-workspace", onkeydown: move |event| { if event.key() == Key::Escape { drag.set(None); drawing.set(false); } },
         div { class: "room-heading", div { h1 { "{room.name}" } p { "Set the scene. Give every detail a story." } }
             label { class: "button", "Import background"
                 input { r#type: "file", accept: "image/png,image/jpeg,image/webp", "aria-label": "Import background", onchange: move |event: Event<FormData>| async move {
@@ -119,7 +120,7 @@ pub fn RoomWorkspace(mut editor: Signal<Editor>, mut notice: Signal<String>) -> 
                     if let Some(room_id) = room_id { let mut id = None; editor.write().edit(|p| id = p.add_hotspot(&room_id, Rect { x:0.35,y:0.35,width:0.2,height:0.2 })); if let Some(id) = id { editor.write().selection = Selection::Hotspot(room_id,id); } }
                 }, "Add hotspot" }
             }
-            div { id: "room-stage", class: if drawing() { "stage drawing" } else { "stage" }, style: "aspect-ratio:{background.width}/{background.height}", "aria-label": "Room canvas",
+            div { id: "room-stage", tabindex: "0", class: if drawing() { "stage drawing" } else { "stage" }, style: "aspect-ratio:{background.width}/{background.height}", "aria-label": "Room canvas",
                 onkeydown: move |event| { if event.key() == Key::Escape { drag.set(None); drawing.set(false); } },
                 onpointerdown: move |event| { if drawing() && event.trigger_button() == Some(dioxus::html::input_data::MouseButton::Primary) {
                     let point = event.client_coordinates(); if let Some(point) = browser::stage_point(point.x,point.y) { browser::capture_pointer(event.pointer_id()); drag.set(Some(Drag::Draw {start:point,end:point})); }
@@ -136,7 +137,7 @@ pub fn RoomWorkspace(mut editor: Signal<Editor>, mut notice: Signal<String>) -> 
                         } }
                     } }
                 },
-                img { src: "{background.data_url}", alt: "{room.name} background", draggable: "false" }
+                img { src: background.display_url(), alt: "{room.name} background", draggable: "false" }
                 for hotspot in room.hotspots.clone() {
                     HotspotButton { key: "{hotspot.id}", hotspot: hotspot.clone(), selected: selected_id.as_deref() == Some(&hotspot.id), editor, drag }
                 }
@@ -156,6 +157,7 @@ pub fn RoomWorkspace(mut editor: Signal<Editor>, mut notice: Signal<String>) -> 
                 }
             }
         }
+      }
     }
 }
 
@@ -191,9 +193,7 @@ pub fn RoomInspector(mut editor: Signal<Editor>) -> Element {
         .read()
         .selected_room()
         .and_then(|id| editor.read().project.room(id).cloned());
-    let Some(room) = room else {
-        return rsx! {};
-    };
+    let room = room?;
     let hotspot = match &editor.read().selection {
         Selection::Hotspot(_, id) => room.hotspots.iter().find(|h| &h.id == id).cloned(),
         _ => None,
@@ -215,15 +215,15 @@ pub fn RoomInspector(mut editor: Signal<Editor>) -> Element {
                 }
             }
             label { "Action" select { value: action, onchange: move |e| update_hotspot(editor, |h| h.action = match e.value().as_str() { "go_to" => Action::GoTo { room_id: String::new() }, "take" => Action::Take { item_id: String::new() }, "talk" => Action::Talk { dialogue_id: String::new() }, _ => Action::Look { text: String::new() } }),
-                option { value: "look", "Inspect" } option { value: "go_to", "Go to room" } option { value: "take", "Pick up item" } option { value: "talk", "Start dialogue" }
+                option { value: "look", selected: action == "look", "Inspect" } option { value: "go_to", selected: action == "go_to", "Go to room" } option { value: "take", selected: action == "take", "Pick up item" } option { value: "talk", selected: action == "talk", "Start dialogue" }
             } }
             match h.action {
                 Action::Look {text} => rsx! { label { "Inspection text" textarea { value: "{text}", oninput: move |e| update_hotspot(editor, |h| h.action = Action::Look { text:e.value() }) } } },
-                Action::GoTo {room_id} => rsx! { label { "Destination room" select { value: "{room_id}", onchange: move |e| update_hotspot(editor, |h| h.action = Action::GoTo { room_id:e.value() }), option { value: "", "Choose destination" } for r in editor.read().project.rooms.clone() { option { value: "{r.id}", "{r.name}" } } } } },
-                Action::Take {item_id} => rsx! { label { "Item to pick up" select { value: "{item_id}", onchange: move |e| update_hotspot(editor, |h| h.action = Action::Take { item_id:e.value() }), option { value: "", "Choose item" } for item in editor.read().project.items.clone() { option { value: "{item.id}", "{item.name}" } } } } },
-                Action::Talk {dialogue_id} => rsx! { label { "Dialogue to start" select { value: "{dialogue_id}", onchange: move |e| update_hotspot(editor, |h| h.action = Action::Talk { dialogue_id:e.value() }), option { value: "", "Choose dialogue" } for d in editor.read().project.dialogues.clone() { option { value: "{d.id}", "{d.name}" } } } } },
+                Action::GoTo {room_id} => rsx! { label { "Destination room" select { value: "{room_id}", onchange: move |e| update_hotspot(editor, |h| h.action = Action::GoTo { room_id:e.value() }), option { value: "", selected: room_id.is_empty(), "Choose destination" } for r in editor.read().project.rooms.clone() { option { value: "{r.id}", selected: r.id == room_id, "{r.name}" } } } } },
+                Action::Take {item_id} => rsx! { label { "Item to pick up" select { value: "{item_id}", onchange: move |e| update_hotspot(editor, |h| h.action = Action::Take { item_id:e.value() }), option { value: "", selected: item_id.is_empty(), "Choose item" } for item in editor.read().project.items.clone() { option { value: "{item.id}", selected: item.id == item_id, "{item.name}" } } } } },
+                Action::Talk {dialogue_id} => rsx! { label { "Dialogue to start" select { value: "{dialogue_id}", onchange: move |e| update_hotspot(editor, |h| h.action = Action::Talk { dialogue_id:e.value() }), option { value: "", selected: dialogue_id.is_empty(), "Choose dialogue" } for d in editor.read().project.dialogues.clone() { option { value: "{d.id}", selected: d.id == dialogue_id, "{d.name}" } } } } },
             }
-            label { "Requires item" select { value: h.requires_item.clone().unwrap_or_default(), onchange: move |e| update_hotspot(editor, |h| h.requires_item = if e.value().is_empty() { None } else { Some(e.value()) }), option { value: "", "No requirement" } for item in editor.read().project.items.clone() { option { value: "{item.id}", "{item.name}" } } } }
+            label { "Requires item" select { value: h.requires_item.clone().unwrap_or_default(), onchange: move |e| update_hotspot(editor, |h| h.requires_item = if e.value().is_empty() { None } else { Some(e.value()) }), option { value: "", selected: h.requires_item.is_none(), "No requirement" } for item in editor.read().project.items.clone() { option { value: "{item.id}", selected: h.requires_item.as_deref() == Some(item.id.as_str()), "{item.name}" } } } }
             p { class: "muted", "Room links are one-way. Add a return hotspot in the destination room." }
             button { class: "danger", onclick: move |_| editor.write().delete_selection(), "Delete hotspot" }
         }
