@@ -2,7 +2,7 @@
 //! format: the inspected upstream revision has no serializable model or runtime.
 use base64::{engine::general_purpose::STANDARD, Engine};
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use std::{collections::HashSet, sync::Arc};
 
 pub const FORMAT: &str = "pace-editor-draft";
 pub const VERSION: u32 = 1;
@@ -35,7 +35,7 @@ pub struct Room {
 #[serde(deny_unknown_fields)]
 pub struct Background {
     pub name: String,
-    pub data_url: String,
+    pub data_url: Arc<str>,
     pub width: u32,
     pub height: u32,
 }
@@ -420,7 +420,7 @@ impl Background {
         }
         Ok(Self {
             name,
-            data_url: format!("data:{mime};base64,{}", STANDARD.encode(bytes)),
+            data_url: format!("data:{mime};base64,{}", STANDARD.encode(bytes)).into(),
             width: size.width as u32,
             height: size.height as u32,
         })

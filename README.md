@@ -52,3 +52,28 @@ Save downloads the full project and attempts an atomic browser recovery copy.
 Recovery is origin-specific and limited by browser quota; a warning instructs you
 to save a file if it is unavailable. Project files are the portable source of
 truth. Keep a downloaded copy before clearing browser data.
+
+## Room tools
+
+Add a room and import its background. Use **Draw hotspot** to drag a rectangle
+in either direction, or **Add hotspot** for keyboard-friendly placement. Drag a
+selected hotspot to move it; arrow keys nudge it by 1% of the image. Set exact
+X/Y/width/height percentages in the inspector. Image replacement preserves the
+normalized bounds. A **Go to room** action links to a stable room ID, so renaming
+a destination does not break the link. Add a separate return hotspot for a
+bidirectional connection.
+
+Validation entries identify the object ID and field; click an entry to select
+its room, hotspot, item, or dialogue. Saves may contain incomplete drafts.
+Invalid drafts cannot be rehearsed.
+
+## Browser checks
+
+```sh
+npm ci
+npx playwright install --with-deps chromium
+trunk build
+npm run test:e2e
+```
+
+For an existing Chromium installation, set `CHROMIUM_PATH=/usr/bin/chromium`.

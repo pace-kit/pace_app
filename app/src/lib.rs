@@ -2,5 +2,6 @@
 mod browser;
 pub mod editor;
 pub mod model;
+mod rooms;
 mod ui;
 pub use ui::App;

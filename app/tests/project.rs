@@ -136,3 +136,71 @@ fn import_rejects_unsupported_corrupt_or_oversize_images() {
     p.rooms[0].background.as_mut().unwrap().width += 1;
     assert!(p.validate().iter().any(|i| i.field == "background"));
 }
+#[test]
+fn canvas_geometry_handles_reverse_drag_clamping_and_tiny_gestures() {
+    assert_eq!(
+        Rect::from_drag((0.8, 0.9), (0.2, 0.3)).unwrap(),
+        Rect {
+            x: 0.2,
+            y: 0.3,
+            width: 0.6000000000000001,
+            height: 0.6000000000000001
+        }
+    );
+    let rect = Rect::from_drag((-1., -1.), (2., 2.)).unwrap();
+    assert_eq!(
+        rect,
+        Rect {
+            x: 0.,
+            y: 0.,
+            width: 1.,
+            height: 1.
+        }
+    );
+    assert!(Rect::from_drag((0.5, 0.5), (0.5, 0.6)).is_none());
+    assert!(
+        Rect {
+            x: f64::NAN,
+            y: 0.,
+            width: 0.1,
+            height: 0.1
+        }
+        .valid()
+            == false
+    );
+    let moved = Rect {
+        x: 0.1,
+        y: 0.2,
+        width: 0.25,
+        height: 0.3,
+    }
+    .translated(2., -2.);
+    assert_eq!(moved.x, 0.75);
+    assert_eq!(moved.y, 0.);
+}
+#[test]
+fn room_and_hotspot_operations_preserve_links_across_rename_and_report_deletion() {
+    let mut p = project();
+    let destination = p.add_room();
+    p.rooms[0].hotspots[1].action = Action::GoTo {
+        room_id: destination.clone(),
+    };
+    p.room_mut(&destination).unwrap().name = "Renamed".into();
+    assert!(!p.validate().iter().any(|i| i.field == "action.room_id"));
+    let affected = p.rooms[0].hotspots[1].id.clone();
+    let mut e = Editor::new(p.clone());
+    e.selection = Selection::Room(destination);
+    e.delete_selection();
+    assert!(e
+        .project
+        .validate()
+        .iter()
+        .any(|i| i.object_id == Some(affected.clone()) && i.field == "action.room_id"));
+    e.focus(Some(&affected));
+    assert_eq!(
+        e.selection,
+        Selection::Hotspot(p.rooms[0].id.clone(), affected)
+    );
+    e.undo();
+    assert_eq!(e.project, p);
+}

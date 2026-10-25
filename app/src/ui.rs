@@ -19,6 +19,7 @@ pub fn App() -> Element {
         }
         editor
     });
+    use_effect(move || browser::set_dirty(editor.read().dirty));
     let issues = editor.read().project.validate();
     rsx! {
         style { {include_str!("editor.css")} }
@@ -26,14 +27,17 @@ pub fn App() -> Element {
             header { class: "topbar",
                 div { class: "brand", "P" }
                 div { class: "brand-copy", strong { "PACE" } span { "Adventure editor" } }
-                div { class: "project-title", "{editor.read().project.title}" }
+                div { class: "project-title", "{editor.read().project.title}" if editor.read().dirty { span { title: "Changes not yet saved to file", " •" } } }
                 button { onclick: move |_| { if !editor.read().dirty || browser::confirm("Discard changes that have not been saved to a project file?") { editor.set(Editor::default()); } }, "New project" }
                 label { class: "button", "Open project"
                     input { r#type: "file", accept: ".json", "aria-label": "Open project", onchange: move |event: Event<FormData>| async move {
                         if editor.read().dirty && !browser::confirm("Replace this project? Save a file first to keep your changes.") { return; }
+                        let document_id = editor.read().document_id;
+                        let original = editor.read().project.clone();
                         if let Some(files) = event.files() {
                             if let Some(name) = files.files().first() {
                                 match files.read_file_to_string(name).await {
+                                    Some(_) if editor.read().document_id != document_id || editor.read().project != original => notice.set("Open cancelled because the project changed while the file was being read. Try opening it again.".into()),
                                     Some(text) => match editor.write().open(&text) { Ok(()) => notice.set("Project opened.".into()), Err(e) => notice.set(e) },
                                     None => notice.set("Could not read project file.".into()),
                                 }
@@ -64,16 +68,18 @@ pub fn App() -> Element {
                         button { disabled: !editor.read().can_undo(), onclick: move |_| editor.write().undo(), "Undo" }
                         button { disabled: !editor.read().can_redo(), onclick: move |_| editor.write().redo(), "Redo" }
                     }
-                    div { class: "empty-state", span { class: "empty-icon", "◇" } h1 { "Every adventure starts somewhere." } p { "Add a room, import its background, and bring your world to life." } }
+                    crate::rooms::RoomWorkspace { key: "{editor.read().selected_room().unwrap_or_default()}", editor, notice }
                 }
                 aside { class: "inspector",
+                    if editor.read().selected_room().is_some() { crate::rooms::RoomInspector { editor } } else {
                     h2 { "Project" }
                     label { "Project title" input { value: "{editor.read().project.title}", oninput: move |e| editor.write().edit(|p| p.title = e.value()) } }
                     label { "Starting room" select { value: editor.read().project.start_room.clone().unwrap_or_default(), onchange: move |e| editor.write().edit(|p| p.start_room = if e.value().is_empty() { None } else { Some(e.value()) }), option { value: "", "Choose a room" } for room in editor.read().project.rooms.clone() { option { value: "{room.id}", "{room.name}" } } } }
+                    }
                     h3 { "Validation · {issues.len()}" }
                     if issues.is_empty() { p { class: "success", "Ready for draft authoring." } }
                     for issue in issues {
-                        button { class: "issue", onclick: move |_| editor.write().focus(issue.object_id.as_deref()), strong { "{issue.field}" } span { "{issue.message}" } }
+                        button { class: "issue", onclick: move |_| editor.write().focus(issue.object_id.as_deref()), strong { {format!("{} · {}", issue.object_id.as_deref().unwrap_or("Project"), issue.field)} } span { "{issue.message}" } }
                     }
                 }
             }
