@@ -2,7 +2,7 @@
 //! format: the inspected upstream revision has no serializable model or runtime.
 use base64::{engine::general_purpose::STANDARD, Engine};
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use std::{collections::HashSet, sync::Arc};
 
 pub const FORMAT: &str = "pace-editor-draft";
 pub const VERSION: u32 = 1;
@@ -35,7 +35,7 @@ pub struct Room {
 #[serde(deny_unknown_fields)]
 pub struct Background {
     pub name: String,
-    pub data_url: String,
+    pub data_url: Arc<str>,
     pub width: u32,
     pub height: u32,
 }
@@ -154,6 +154,16 @@ impl Default for Project {
 
 impl Project {
     pub fn to_json(&self) -> Result<String, String> {
+        if self.rooms.iter().flat_map(|r| &r.hotspots).any(|h| {
+            [h.rect.x, h.rect.y, h.rect.width, h.rect.height]
+                .iter()
+                .any(|n| !n.is_finite())
+        }) {
+            return Err(
+                "Cannot save a hotspot with non-finite coordinates. Correct its bounds first."
+                    .into(),
+            );
+        }
         let text = serde_json::to_string_pretty(self).map_err(|e| e.to_string())?;
         if text.len() > MAX_PROJECT_BYTES {
             return Err("Project exceeds the 64 MiB file limit. Reduce background sizes.".into());
@@ -287,10 +297,10 @@ impl Project {
         if self.title.trim().is_empty() {
             push(None, "title", "Give the project a title.".into());
         }
-        if !self
+        if self
             .start_room
             .as_deref()
-            .is_some_and(|id| self.room(id).is_some())
+            .is_none_or(|id| self.room(id).is_none())
         {
             push(
                 None,
@@ -400,6 +410,23 @@ impl Project {
 }
 
 impl Background {
+    /// Only embedded raster data is rendered; malformed imports cannot load a
+    /// remote URL or an active document through the image element.
+    pub fn display_url(&self) -> &str {
+        if [
+            "data:image/png;base64,",
+            "data:image/jpeg;base64,",
+            "data:image/webp;base64,",
+        ]
+        .iter()
+        .any(|prefix| self.data_url.starts_with(prefix))
+        {
+            &self.data_url
+        } else {
+            ""
+        }
+    }
+
     pub fn import(name: String, bytes: &[u8]) -> Result<Self, String> {
         if bytes.len() > MAX_IMAGE_BYTES {
             return Err("Background exceeds 8 MiB. Resize it before importing.".into());
@@ -420,7 +447,7 @@ impl Background {
         }
         Ok(Self {
             name,
-            data_url: format!("data:{mime};base64,{}", STANDARD.encode(bytes)),
+            data_url: format!("data:{mime};base64,{}", STANDARD.encode(bytes)).into(),
             width: size.width as u32,
             height: size.height as u32,
         })

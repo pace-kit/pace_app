@@ -1,4 +1,6 @@
 use crate::model::Project;
+use std::sync::atomic::{AtomicUsize, Ordering};
+static NEXT_DOCUMENT: AtomicUsize = AtomicUsize::new(1);
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Selection {
@@ -11,6 +13,7 @@ pub enum Selection {
 
 #[derive(Clone)]
 pub struct Editor {
+    pub document_id: usize,
     pub project: Project,
     pub selection: Selection,
     pub dirty: bool,
@@ -32,6 +35,7 @@ impl Editor {
             .map(|r| Selection::Room(r.id.clone()))
             .unwrap_or(Selection::Project);
         Self {
+            document_id: NEXT_DOCUMENT.fetch_add(1, Ordering::Relaxed),
             project,
             selection,
             dirty: false,

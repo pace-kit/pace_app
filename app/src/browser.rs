@@ -58,6 +58,23 @@ mod web {
         }
         Ok(())
     }
+    pub fn capture_pointer(id: i32) {
+        if let Some(element) = web_sys::window()
+            .and_then(|w| w.document())
+            .and_then(|d| d.get_element_by_id("room-stage"))
+        {
+            let _ = element.set_pointer_capture(id);
+        }
+    }
+    #[wasm_bindgen::prelude::wasm_bindgen(
+        inline_js = "export function setDirty(dirty) { window.onbeforeunload = dirty ? (event) => { event.preventDefault(); event.returnValue = ''; } : null; } export function openRehearsal() { const dialog = document.getElementById('draft-rehearsal'); if (!dialog) return; dialog.oncancel = event => { event.preventDefault(); dialog.querySelector('#close-rehearsal').click(); }; dialog.showModal(); }"
+    )]
+    extern "C" {
+        #[wasm_bindgen::prelude::wasm_bindgen(js_name = setDirty)]
+        pub fn set_dirty(dirty: bool);
+        #[wasm_bindgen::prelude::wasm_bindgen(js_name = openRehearsal)]
+        pub fn open_rehearsal();
+    }
     pub fn stage_point(x: f64, y: f64) -> Option<(f64, f64)> {
         let rect = web_sys::window()?
             .document()?
@@ -94,3 +111,11 @@ pub fn download(_: &str) -> Result<(), String> {
 pub fn stage_point(_: f64, _: f64) -> Option<(f64, f64)> {
     None
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn capture_pointer(_: i32) {}
+#[cfg(not(target_arch = "wasm32"))]
+pub fn set_dirty(_: bool) {}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn open_rehearsal() {}
