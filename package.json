@@ -1,0 +1,6 @@
+{
+  "name": "pace-editor-browser-tests",
+  "private": true,
+  "scripts": { "test:e2e": "playwright test" },
+  "devDependencies": { "@playwright/test": "1.56.1" }
+}
