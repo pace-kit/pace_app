@@ -1,0 +1,9 @@
+{
+  "platform": "web-wasm",
+  "core_repository": "https://github.com/pace-kit/pace_core",
+  "inspected_core_revision": "6ccfd6ea60534f3c3312882458e1c83308a76b81",
+  "runtime_revision": null,
+  "status": "blocked: upstream contains no format or runtime API",
+  "editor_format": "pace-editor-draft",
+  "editor_format_version": 1
+}

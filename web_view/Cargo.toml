@@ -1,24 +1,8 @@
 [package]
 name = "web_view"
 version = "0.1.0"
-authors = ["WilliamRagstad <william.ragstad@gmail.com>"]
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-
 app = { path = "../app", features = ["web"] }
-
-serde = { version = "1.0.197", features = ["derive"] }
-
-dioxus = { version = "0.5", features = ["fullstack", "router"] }
-
-# Debug
-tracing = "0.1.40"
-dioxus-logger = "0.5.0"
-
-[features]
-default = []
-server = ["dioxus/axum"]
-web = ["dioxus/web"]
+dioxus = { version = "=0.5.6", default-features = false, features = ["web", "launch"] }

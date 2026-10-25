@@ -4,19 +4,16 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+dioxus = { version = "=0.5.6", default-features = false, features = ["macro", "html", "signals", "hooks"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.22"
+imagesize = "0.13"
 
-base_resolver = { path = "../base_resolver" }
-web_resolver = { path = "../web_resolver" }
-desktop_resolver = { path = "../desktop_resolver" }
-
-serde = { version = "1.0.197", features = ["derive"] }
-
-dioxus = { version = "0.5", features = ["router"] }
-
-# Debug
-tracing = "0.1.40"
-dioxus-logger = "0.5.0"
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "0.2"
+web-sys = { version = "0.3", features = ["Window", "Storage", "Document", "Element", "DomRect", "HtmlElement", "HtmlAnchorElement", "Blob", "BlobPropertyBag", "Url"] }
+js-sys = "0.3"
 
 [features]
 web = []
-desktop = []

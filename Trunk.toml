@@ -1,0 +1,6 @@
+[build]
+target = "web_view/index.html"
+dist = "dist"
+[serve]
+addresses = ["0.0.0.0"]
+port = 8080
