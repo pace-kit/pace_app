@@ -3,6 +3,7 @@ mod browser;
 pub mod editor;
 pub mod model;
 mod rooms;
+pub mod sharing;
 mod ui;
 pub use ui::App;
 
