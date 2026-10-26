@@ -1,9 +1,11 @@
 # Core integration boundary
 
-Do not reinterpret the draft schema as an upstream PACE format. The dependency
-must supply a versioned project contract, validation diagnostics with object IDs,
-an asset-loading contract, and a runnable web target before runtime integration
-can be completed.
+Do not reinterpret the draft schema as an upstream PACE format. Core at
+`1aa2b36270b68ea6fc04c268c3d5661ec09790aa` now supplies a versioned scene contract,
+validation with JSON paths and a native runtime. Core v1 has no asset-loading
+contract for the editor's embedded backgrounds. Draft conversion and a runnable
+web target still need integration before runtime preview/export can be enabled.
+Project sharing reuses the unchanged draft loader; it does not perform conversion.
 
 1. Set `runtime.lock.json.runtime_revision` to the actual immutable core commit.
 2. Add the core crate using `git` + `rev` (and commit Cargo.lock), or pin its WASM

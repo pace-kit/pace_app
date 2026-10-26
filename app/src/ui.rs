@@ -58,7 +58,8 @@ pub fn App() -> Element {
                     }
                 }, "Save project" }
             }
-            div { class: "dependency-banner", "Draft format v1 · PACE core integration pending. Your project files include all imported images." }
+            div { class: "dependency-banner", "Editor draft v1 · Your project files include all imported images." }
+            crate::sharing::SharingPanel { editor }
             div { class: "workspace",
                 aside { class: "sidebar",
                     button { class: "project-link", onclick: move |_| editor.write().selection = Selection::Project, "Project settings" }
@@ -90,7 +91,7 @@ pub fn App() -> Element {
                         button { disabled: has_issues, onclick: move |_| {
                             match crate::rehearsal::Rehearsal::new(&editor.read().project) { Ok(state) => session.set(Some(state)), Err(e) => notice.set(e) }
                         }, "Rehearse draft" }
-                        button { disabled: true, title: "No PACE core runtime is available at the inspected revision.", "Core preview" }
+                        button { disabled: true, title: "Draft conversion and a browser build of the PACE core runtime are not integrated yet.", "Core preview" }
                         button { disabled: true, title: "Game export requires a pinned PACE core runtime.", "Export game" }
                     }
                     if matches!(editor.read().selection, Selection::Item(_) | Selection::Dialogue(_)) { crate::story::StoryWorkspace { editor } } else {

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["app", "web_view"]
+members = ["app", "web_view", "project_format"]
 # The initial supported platform is browser/WASM. Legacy desktop scaffolding is
 # retained outside the workspace until its platform adapter is implemented.
-exclude = ["base_resolver", "desktop_resolver", "desktop_view", "web_resolver"]
+exclude = ["base_resolver", "desktop_resolver", "desktop_view", "web_resolver", "integration-server"]

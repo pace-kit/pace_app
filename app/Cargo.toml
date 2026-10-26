@@ -7,13 +7,15 @@ edition = "2021"
 dioxus = { version = "=0.5.6", default-features = false, features = ["macro", "html", "signals", "hooks"] }
 serde = { version = "1", features = ["derive", "rc"] }
 serde_json = "1"
-base64 = "0.22"
-imagesize = "0.13"
+pace_editor_format = { path = "../project_format" }
+url = "2"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2"
 web-sys = { version = "0.3", features = ["Window", "Storage", "Document", "Element", "DomRect", "HtmlElement", "HtmlAnchorElement", "Blob", "BlobPropertyBag", "Url"] }
 js-sys = "0.3"
+wasm-bindgen-futures = "0.4"
+serde-wasm-bindgen = "0.5"
 
 [features]
 web = []

@@ -21,20 +21,33 @@ cargo check -p web_view --target wasm32-unknown-unknown
 cargo fmt --all -- --check
 ```
 
-## Core dependency — blocked
+## Project sharing
 
-The inspected `pace_core` commit is
-[`6ccfd6ea60534f3c3312882458e1c83308a76b81`](https://github.com/pace-kit/pace_core/tree/6ccfd6ea60534f3c3312882458e1c83308a76b81).
-It contains empty build/debug modules and Bevy templates, but no versioned scene
-format, loader, executable runtime, or three-room fixture. No other branches or
-PRs were available during implementation. `runtime.lock.json` records this
-fact; its null runtime revision is **not** a runnable runtime pin.
+Open **Project sharing** to connect to `pace_server`, upload a private snapshot,
+grant reader/writer access, and download another user's project. Uploads require
+the revision you downloaded; stale writes keep your edits and show a conflict.
+Downloads are staged for review before replacing the open project. Tokens stay
+in memory and are cleared on reload. Local save/recovery works without a server.
+See [setup and the two-client walkthrough](docs/project-sharing.md).
+
+This is **project sharing, not real-time co-editing**. There is no automatic
+upload, merge, polling or live presence.
+
+## Core and draft formats
+
+`pace_core` at
+[`1aa2b36270b68ea6fc04c268c3d5661ec09790aa`](https://github.com/pace-kit/pace_core/tree/1aa2b36270b68ea6fc04c268c3d5661ec09790aa)
+now defines core scene v1 and a runnable native adventure runtime. The server
+validates core scenes with that pinned loader, independently of editor drafts.
+The editor does not yet convert drafts to core scenes or run the core in a browser;
+`runtime.lock.json`'s null runtime revision is **not** a runnable web runtime pin.
 
 Projects currently use **`pace-editor-draft`, version 1**, an explicitly
-editor-owned contract, not a claimed implementation of the missing core format.
-Core save/import, runtime preview, and game export cannot be completed until
-that dependency exists. Draft files are deliberately named `.pace-draft.json`.
-No upstream compatibility is implied.
+editor-owned contract, with embedded images and editable incomplete references.
+The model and loader are shared with the server through the `pace_editor_format`
+crate. Sharing does not change that schema or convert it into a core scene.
+Draft files remain `.pace-draft.json`; core conversion, preview and game export
+require a separate integration that can account for their different features.
 
 ## Project files
 
@@ -73,6 +86,8 @@ Invalid drafts cannot be rehearsed.
 npm ci
 npx playwright install --with-deps chromium
 trunk build
+# Build the compatible server (see docs/project-sharing.md), then:
+export PACE_SERVER_BIN=/absolute/path/to/pace_server/target/debug/pace_server
 npm run test:e2e
 ```
 
@@ -94,4 +109,5 @@ reproduces the walkthrough, including save/reopen equality for the whole project
 links, dialogue branches and item gates. Restart clears its session. It never
 modifies the source project and is **not** the PACE core runtime. **Core preview**
 and **Export game** remain disabled. This implementation does not yet meet the
-core-format serialization or pinned-runtime preview/export requirements.
+core-format conversion or pinned-runtime preview/export requirements. Snapshot
+sharing is available for the editor format independently of runtime integration.
