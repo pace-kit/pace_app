@@ -30,10 +30,9 @@ checksum = "d301b3b94cb4b2f23d7917810addbbaff90738e0ca2be692bd027e70d7e0330c"
 name = "app"
 version = "0.1.0"
 dependencies = [
- "base64 0.22.1",
  "dioxus",
- "imagesize",
  "js-sys",
+ "pace_editor_format",
  "serde",
  "serde_json",
  "wasm-bindgen",
@@ -1392,6 +1391,16 @@ name = "overload"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b15813163c1d831bf4a13c3610c05c0d03b39feb07f7e09fa234dac9b15aaf39"
+
+[[package]]
+name = "pace_editor_format"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "imagesize",
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "parking"
